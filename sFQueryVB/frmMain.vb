@@ -13,13 +13,31 @@ Public Class frmMain
 
     Public Property Dt As DataTable
         Get
+            Return Dt1
+        End Get
+        Set(value As DataTable)
+            Dt1 = value
+        End Set
+    End Property
+    Public Property tbl2 As DataTable
+        Get
+            Return _tbl2
+        End Get
+        Set(value As DataTable)
+            _tbl2 = value
+        End Set
+    End Property
+
+    Public Property Dt1 As DataTable
+        Get
             Return _dt
         End Get
         Set(value As DataTable)
             _dt = value
         End Set
     End Property
-    Public Property tbl2 As DataTable
+
+    Public Property Tbl21 As DataTable
         Get
             Return _tbl2
         End Get
@@ -38,8 +56,9 @@ Public Class frmMain
         Dt.Columns.Add("User", GetType(String))
         Dt.Columns.Add("Status", GetType(String))
         Dt.Columns.Add("CC", GetType(String))
+        Dt.Columns.Add("CC_Name", GetType(String))
         Dt.Columns.Add("Level1", GetType(String))
-
+        Dt.Columns.Add("Level1_Name", GetType(String))
     End Sub
 
     Public Sub AddPerson()
@@ -95,7 +114,7 @@ Public Class frmMain
 
             If txtuID.Text > "" And txtYID.Text > "" And txtUser.Text > "" And txtStatus.Text > "" And txtCC.Text > "" And txtLevel1.Text > "" Then
                 AddPerson()
-                indexU = indexU + 1
+                indexU += 1
             End If
         Next
 
@@ -103,6 +122,10 @@ Public Class frmMain
         'Dt.Dispose()
         ConvertCSVToDataSet()
         CompareDataTables(Dt, tbl2)
+
+        Dt1.Dispose()
+        _tbl2.Dispose()
+
     End Sub
 
     Public Function CreateClient() As SalesforceClient
@@ -124,7 +147,7 @@ Public Class frmMain
         Using file As System.IO.StreamWriter = New System.IO.StreamWriter("C:\Users\y15645\Documents\Fusion\WriteLines2.txt", True)
 
             If True Then
-                file.WriteLine(client.Query("SELECT Name, YID__c, Status__c,Cost_Center__c,Level_1_Supervisor_ID__c from FF__Key_Contact__c"))
+                file.WriteLine(client.Query("SELECT Name, YID__c, Status__c,Cost_Center__c,Level_1_Supervisor_ID__c,Cost_Center_Name__c,Level_1_Supervisor_Name__c from FF__Key_Contact__c"))
             End If
         End Using
 
@@ -134,9 +157,7 @@ Public Class frmMain
         Dim reader As StreamReader
         reader = New StreamReader("H:\Fusion_Employee_Key_Contacts.csv")
         'Dim tbl2 As DataTable = New DataTable
-        Dim currentLine As String = ""
         Dim id As Integer = 1
-        'currentLine = reader.ReadLine
         Dim firstLine As Boolean = True
         Dim regex As Object
         regex = CreateObject("vbscript.regexp")
@@ -164,7 +185,7 @@ Public Class frmMain
                 Else
                     splitline2 = Split(regex.Replace((reader.ReadLine), ";"), ";")
                     tbl2.Rows.Add(splitline2)
-                    id = id + 1
+                    id += 1
                 End If
             End While
 
@@ -182,6 +203,8 @@ Public Class frmMain
             'dgPeople.DataSource = tbl2
         End Using
 
+        reader.Dispose()
+
     End Sub
 
     Private Sub CompareDataTables(ByVal dt1 As DataTable, ByVal dt2 As DataTable)
@@ -192,7 +215,10 @@ Public Class frmMain
             .Columns.Add("NAME")
             .Columns.Add("STATUS")
             .Columns.Add("CC")
+            .Columns.Add("CC_Name")
             .Columns.Add("Level1")
+            .Columns.Add("Level1_Name")
+
         End With
         Dim rowArray As DataRow()
         Dim rowAdd As DataRow
@@ -212,24 +238,28 @@ Public Class frmMain
                     ChangesDataTable.Rows.Add(rowAdd)
                 End If
 
+                If Mid(row(6).ToString, 2, 10) <> "Terminated" Then
+                    If Mid(row(15).ToString, 2, 4) <> rowArray(0).Item(5).ToString Then
+                        rowAdd = ChangesDataTable.NewRow
+                        rowAdd("YID") = Mid(row(1).ToString, 2, 6)
+                        rowAdd("NAME") = row(5).ToString
+                        rowAdd("STATUS") = Mid(row(6).ToString, 2, 10)
+                        rowAdd("CC") = Mid(row(15).ToString, 2, 4)
+                        rowAdd("CC_Name") = Mid(row(16).ToString, 2, 35)
+                        ChangesDataTable.Rows.Add(rowAdd)
+                    End If
 
-                If Mid(row(15).ToString, 2, 4) <> rowArray(0).Item(5).ToString Then
-                    rowAdd = ChangesDataTable.NewRow
-                    rowAdd("YID") = Mid(row(1).ToString, 2, 6)
-                    rowAdd("NAME") = row(5).ToString
-                    rowAdd("STATUS") = Mid(row(6).ToString, 2, 10)
-                    rowAdd("CC") = Mid(row(15).ToString, 2, 4)
-                    ChangesDataTable.Rows.Add(rowAdd)
+                    If Mid(row(36).ToString, 2, 6) <> rowArray(0).Item(6).ToString Then
+                        rowAdd = ChangesDataTable.NewRow
+                        rowAdd("YID") = Mid(row(1).ToString, 2, 6)
+                        rowAdd("NAME") = row(5).ToString
+                        rowAdd("STATUS") = Mid(row(6).ToString, 2, 10)
+                        rowAdd("LEVEL1") = Mid(row(36).ToString, 2, 6)
+                        rowAdd("LEVEL1_Name") = Mid(row(35).ToString, 2, 35)
+                        ChangesDataTable.Rows.Add(rowAdd)
+                    End If
                 End If
 
-                If Mid(row(36).ToString, 2, 4) <> rowArray(0).Item(6).ToString Then
-                    rowAdd = ChangesDataTable.NewRow
-                    rowAdd("YID") = Mid(row(1).ToString, 2, 6)
-                    rowAdd("NAME") = row(5).ToString
-                    rowAdd("STATUS") = Mid(row(6).ToString, 2, 10)
-                    rowAdd("LEVEL1") = Mid(row(36).ToString, 2, 6)
-                    ChangesDataTable.Rows.Add(rowAdd)
-                End If
             End If
         Next
         dgChange.DataSource = ChangesDataTable
